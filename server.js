@@ -61,7 +61,7 @@ app.get('/api/auth/google', (req, res) => {
   res.cookie(STATE_COOKIE, state, {
     httpOnly: true,
     secure: true,
-    sameSite: 'lax',
+    sameSite: 'none',
     maxAge: 10 * 60 * 1000
   })
   res.redirect(`https://accounts.google.com/o/oauth2/v2/auth?${params}`)
@@ -74,7 +74,7 @@ app.get('/api/auth/google/callback', async (req, res) => {
     if (!code || !state || state !== req.cookies[STATE_COOKIE]) {
       return res.redirect(`${FRONTEND}/auth.html?error=invalid_state`)
     }
-    res.clearCookie(STATE_COOKIE)
+    res.clearCookie(STATE_COOKIE, { httpOnly: true, secure: true, sameSite: 'none' })
 
     const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
       method: 'POST',
@@ -114,7 +114,7 @@ app.get('/api/auth/google/callback', async (req, res) => {
     res.cookie(COOKIE, sessionToken, {
       httpOnly: true,
       secure: true,
-      sameSite: 'lax',
+      sameSite: 'none',
       maxAge: 30 * 24 * 60 * 60 * 1000
     })
     res.redirect(`${FRONTEND}/dashboard.html`)
@@ -186,7 +186,7 @@ app.post('/api/auth/google/token', async (req, res) => {
     res.cookie(COOKIE, sessionToken, {
       httpOnly: true,
       secure: true,
-      sameSite: 'lax',
+      sameSite: 'none',
       maxAge: 30 * 24 * 60 * 60 * 1000
     })
     res.json({ ok: true, user })
@@ -204,7 +204,7 @@ app.get('/api/auth/me', async (req, res) => {
 
 app.post('/api/auth/logout', async (req, res) => {
   await db.deleteSession(req.cookies[COOKIE])
-  res.clearCookie(COOKIE)
+  res.clearCookie(COOKIE, { httpOnly: true, secure: true, sameSite: 'none' })
   res.json({ ok: true })
 })
 
@@ -217,7 +217,7 @@ app.post('/api/admin/login', async (req, res) => {
   res.cookie(ADMIN_COOKIE, token, {
     httpOnly: true,
     secure: true,
-    sameSite: 'lax',
+    sameSite: 'none',
     maxAge: 7 * 24 * 60 * 60 * 1000
   })
   res.json({ ok: true, admin })
@@ -231,7 +231,7 @@ app.get('/api/admin/check', async (req, res) => {
 
 app.post('/api/admin/logout', async (req, res) => {
   await db.deleteAdminSession(req.cookies[ADMIN_COOKIE])
-  res.clearCookie(ADMIN_COOKIE)
+  res.clearCookie(ADMIN_COOKIE, { httpOnly: true, secure: true, sameSite: 'none' })
   res.json({ ok: true })
 })
 
