@@ -216,10 +216,10 @@ function verifyGoogleToken(token, keys) {
 app.post('/api/auth/google/token', async (req, res) => {
   try {
     const { token } = req.body || {}
-    if (!token) return jsonError(res, 400, 'Токен не передан')
+    if (!token) return jsonError(res, 400, 'Токен не передано')
     const keys = await getGoogleKeys()
     const profile = verifyGoogleToken(String(token), keys)
-    if (!profile) return jsonError(res, 401, 'Недействительный токен Google')
+    if (!profile) return jsonError(res, 401, 'Недійсний токен Google')
 
     const user = await db.upsertUser({
       provider: 'google',
@@ -239,13 +239,13 @@ app.post('/api/auth/google/token', async (req, res) => {
     res.json({ ok: true, user })
   } catch (err) {
     console.error('google token error', err)
-    jsonError(res, 500, 'Внутренняя ошибка сервера')
+    jsonError(res, 500, 'Внутрішня помилка сервера')
   }
 })
 
 app.get('/api/auth/me', async (req, res) => {
   const user = await db.getUserBySession(req.cookies[COOKIE])
-  if (!user) return jsonError(res, 401, 'Не авторизован')
+  if (!user) return jsonError(res, 401, 'Не авторизовано')
   res.json({ user })
 })
 
@@ -259,9 +259,9 @@ app.post('/api/auth/logout', async (req, res) => {
 
 app.post('/api/admin/login', async (req, res) => {
   const { username, password } = req.body || {}
-  if (!username || !password) return jsonError(res, 400, 'Укажите логин и пароль')
+  if (!username || !password) return jsonError(res, 400, 'Вкажіть логін та пароль')
   const admin = await db.verifyAdmin(String(username), String(password))
-  if (!admin) return jsonError(res, 401, 'Неверный логин или пароль')
+  if (!admin) return jsonError(res, 401, 'Невірний логін або пароль')
   const token = await db.createAdminSession(admin.id)
   res.cookie(ADMIN_COOKIE, token, {
     httpOnly: true,
@@ -274,7 +274,7 @@ app.post('/api/admin/login', async (req, res) => {
 
 async function requireAdmin(req, res, next) {
   const admin = await db.getAdminBySession(req.cookies[ADMIN_COOKIE])
-  if (!admin) return jsonError(res, 401, 'Не авторизован как администратор')
+  if (!admin) return jsonError(res, 401, 'Не авторизовано як адміністратор')
   req.admin = admin
   next()
 }
@@ -299,7 +299,7 @@ app.get('/api/admin/stats', requireAdmin, async (req, res) => {
     const stats = await db.getAdminStats()
     res.json({ ok: true, stats })
   } catch (err) {
-    jsonError(res, 500, 'Ошибка получения статистики')
+    jsonError(res, 500, 'Помилка отримання статистики')
   }
 })
 
@@ -311,7 +311,7 @@ app.get('/api/admin/bookings', requireAdmin, async (req, res) => {
     const bookings = await db.listBookings(status)
     res.json({ ok: true, bookings })
   } catch (err) {
-    jsonError(res, 500, 'Ошибка получения бронирований')
+    jsonError(res, 500, 'Помилка отримання бронювань')
   }
 })
 
@@ -319,10 +319,10 @@ app.patch('/api/admin/bookings/:id', requireAdmin, async (req, res) => {
   try {
     const { status, table_num } = req.body || {}
     const updated = await db.updateBookingStatus(req.params.id, status, table_num)
-    if (!updated) return jsonError(res, 404, 'Бронь не найдена')
+    if (!updated) return jsonError(res, 404, 'Бронювання не знайдено')
     res.json({ ok: true, booking: updated })
   } catch (err) {
-    jsonError(res, 500, 'Ошибка обновления брони')
+    jsonError(res, 500, 'Помилка оновлення бронювання')
   }
 })
 
@@ -331,7 +331,7 @@ app.delete('/api/admin/bookings/:id', requireAdmin, async (req, res) => {
     await db.deleteBooking(req.params.id)
     res.json({ ok: true })
   } catch (err) {
-    jsonError(res, 500, 'Ошибка удаления брони')
+    jsonError(res, 500, 'Помилка видалення бронювання')
   }
 })
 
@@ -342,7 +342,7 @@ app.get('/api/admin/tables', requireAdmin, async (req, res) => {
     const tables = await db.listTables()
     res.json({ ok: true, tables })
   } catch (err) {
-    jsonError(res, 500, 'Ошибка получения столов')
+    jsonError(res, 500, 'Помилка отримання столиків')
   }
 })
 
@@ -350,10 +350,10 @@ app.patch('/api/admin/tables/:id', requireAdmin, async (req, res) => {
   try {
     const { status } = req.body || {}
     const updated = await db.updateTableStatus(req.params.id, status)
-    if (!updated) return jsonError(res, 404, 'Столик не найден')
+    if (!updated) return jsonError(res, 404, 'Столик не знайдено')
     res.json({ ok: true, table: updated })
   } catch (err) {
-    jsonError(res, 500, 'Ошибка обновления столика')
+    jsonError(res, 500, 'Помилка оновлення столика')
   }
 })
 
@@ -364,18 +364,18 @@ app.get('/api/admin/staff', requireAdmin, async (req, res) => {
     const staff = await db.listStaff()
     res.json({ ok: true, staff })
   } catch (err) {
-    jsonError(res, 500, 'Ошибка получения персонала')
+    jsonError(res, 500, 'Помилка отримання персоналу')
   }
 })
 
 app.post('/api/admin/staff', requireAdmin, async (req, res) => {
   try {
     const { name, role, phone, shift_status, notes } = req.body || {}
-    if (!name || !role) return jsonError(res, 400, 'Укажите имя и должность')
+    if (!name || !role) return jsonError(res, 400, 'Вкажіть ім\'я та посаду')
     const created = await db.createStaff({ name, role, phone, shift_status, notes })
     res.json({ ok: true, staff: created })
   } catch (err) {
-    jsonError(res, 500, 'Ошибка добавления сотрудника')
+    jsonError(res, 500, 'Помилка додавання співробітника')
   }
 })
 
@@ -383,10 +383,10 @@ app.patch('/api/admin/staff/:id', requireAdmin, async (req, res) => {
   try {
     const { shift_status } = req.body || {}
     const updated = await db.updateStaffShift(req.params.id, shift_status)
-    if (!updated) return jsonError(res, 404, 'Сотрудник не найден')
+    if (!updated) return jsonError(res, 404, 'Співробітника не знайдено')
     res.json({ ok: true, staff: updated })
   } catch (err) {
-    jsonError(res, 500, 'Ошибка изменения статуса сотрудника')
+    jsonError(res, 500, 'Помилка зміни статусу співробітника')
   }
 })
 
@@ -395,7 +395,7 @@ app.delete('/api/admin/staff/:id', requireAdmin, async (req, res) => {
     await db.deleteStaff(req.params.id)
     res.json({ ok: true })
   } catch (err) {
-    jsonError(res, 500, 'Ошибка удаления сотрудника')
+    jsonError(res, 500, 'Помилка видалення співробітника')
   }
 })
 
@@ -406,7 +406,7 @@ app.get('/api/admin/stop-list', requireAdmin, async (req, res) => {
     const items = await db.listStopList()
     res.json({ ok: true, items })
   } catch (err) {
-    jsonError(res, 500, 'Ошибка получения стоп-листа')
+    jsonError(res, 500, 'Помилка отримання стоп-листа')
   }
 })
 

@@ -111,18 +111,18 @@ async function seedTables() {
   if (parseInt(count.rows[0].count) > 0) return
 
   const defaultTables = [
-    { number: 1, hall: 'Основной зал', capacity: 2, status: 'free' },
-    { number: 2, hall: 'Основной зал', capacity: 4, status: 'free' },
-    { number: 3, hall: 'Основной зал', capacity: 4, status: 'free' },
-    { number: 4, hall: 'Основной зал', capacity: 6, status: 'free' },
-    { number: 5, hall: 'Основной зал', capacity: 8, status: 'free' },
+    { number: 1, hall: 'Основний зал', capacity: 2, status: 'free' },
+    { number: 2, hall: 'Основний зал', capacity: 4, status: 'free' },
+    { number: 3, hall: 'Основний зал', capacity: 4, status: 'free' },
+    { number: 4, hall: 'Основний зал', capacity: 6, status: 'free' },
+    { number: 5, hall: 'Основний зал', capacity: 8, status: 'free' },
     { number: 6, hall: 'VIP-зона', capacity: 6, status: 'free' },
     { number: 7, hall: 'VIP-зона', capacity: 10, status: 'free' },
     { number: 8, hall: 'VIP-зона', capacity: 12, status: 'free' },
-    { number: 9, hall: 'Терраса', capacity: 2, status: 'free' },
-    { number: 10, hall: 'Терраса', capacity: 4, status: 'free' },
-    { number: 11, hall: 'Терраса', capacity: 4, status: 'free' },
-    { number: 12, hall: 'Терраса', capacity: 6, status: 'free' }
+    { number: 9, hall: 'Тераса', capacity: 2, status: 'free' },
+    { number: 10, hall: 'Тераса', capacity: 4, status: 'free' },
+    { number: 11, hall: 'Тераса', capacity: 4, status: 'free' },
+    { number: 12, hall: 'Тераса', capacity: 6, status: 'free' }
   ]
 
   for (const t of defaultTables) {
@@ -139,11 +139,11 @@ async function seedStaff() {
   if (parseInt(count.rows[0].count) > 0) return
 
   const defaultStaff = [
-    { name: 'Александр Шевченко', role: 'Шеф-повар', phone: '+380 (50) 111-22-33', shift_status: 'on', notes: 'Главная смена кухни' },
-    { name: 'Елена Ковальчук', role: 'Хостес', phone: '+380 (67) 222-33-44', shift_status: 'on', notes: 'Встреча гостей, брони' },
-    { name: 'Максим Григорьев', role: 'Старший официант', phone: '+380 (93) 333-44-55', shift_status: 'on', notes: 'Основной зал' },
-    { name: 'Дмитрий Мельник', role: 'Сомелье / Бармен', phone: '+380 (50) 444-55-66', shift_status: 'on', notes: 'Винная карта и авторские коктейли' },
-    { name: 'Анна Ткаченко', role: 'Официант VIP', phone: '+380 (68) 555-66-77', shift_status: 'off', notes: 'VIP обслуживание' }
+    { name: 'Олександр Шевченко', role: 'Шеф-кухар', phone: '+380 (50) 111-22-33', shift_status: 'on', notes: 'Головна зміна кухні' },
+    { name: 'Олена Ковальчук', role: 'Хостес', phone: '+380 (67) 222-33-44', shift_status: 'on', notes: 'Зустріч гостей, броні' },
+    { name: 'Максим Григор’єв', role: 'Старший офіціант', phone: '+380 (93) 333-44-55', shift_status: 'on', notes: 'Основний зал' },
+    { name: 'Дмитро Мельник', role: 'Сомельє / Бармен', phone: '+380 (50) 444-55-66', shift_status: 'on', notes: 'Винна карта та авторські коктейлі' },
+    { name: 'Анна Ткаченко', role: 'Офіціант VIP', phone: '+380 (68) 555-66-77', shift_status: 'off', notes: 'VIP обслуговування' }
   ]
 
   for (const s of defaultStaff) {
@@ -160,12 +160,12 @@ async function seedStopList() {
   if (parseInt(count.rows[0].count) > 0) return
 
   const defaultItems = [
-    { item_name: 'Тартар из мраморной говядины с трюфелем', category: 'Закуски', is_stopped: false },
-    { item_name: 'Севиче из дикого сибаса с манго', category: 'Закуски', is_stopped: false },
-    { item_name: 'Стейк Рибай Black Angus (Prime)', category: 'Основные блюда', is_stopped: false },
-    { item_name: 'Утиная грудка Магре с вишневым соусом', category: 'Основные блюда', is_stopped: false },
-    { item_name: 'Филе чилийского сибаса с шафрановым ризотто', category: 'Основные блюда', is_stopped: false },
-    { item_name: 'Шоколадный фондан с золотым листом', category: 'Десерты', is_stopped: false },
+    { item_name: 'Тартар із мармурової яловичини з трюфелем', category: 'Закуски', is_stopped: false },
+    { item_name: 'Севіче з дикого сибаса з манго', category: 'Закуски', is_stopped: false },
+    { item_name: 'Стейк Рібай Black Angus (Prime)', category: 'Основні страви', is_stopped: false },
+    { item_name: 'Качина грудка Магре з вишневим соусом', category: 'Основні страви', is_stopped: false },
+    { item_name: 'Філе чилійського сибаса з шафрановим різотто', category: 'Основні страви', is_stopped: false },
+    { item_name: 'Шоколадний фондан із золотим листком', category: 'Десерти', is_stopped: false },
     { item_name: 'Коктейль Royal Gold 24k', category: 'Бар', is_stopped: false }
   ]
 
