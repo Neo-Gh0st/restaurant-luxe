@@ -294,6 +294,18 @@ app.get('/api/admin/users', requireAdmin, async (req, res) => {
   res.json({ users })
 })
 
+app.delete('/api/admin/users/:id', requireAdmin, async (req, res) => {
+  try {
+    const deleted = await db.deleteUser(req.params.id)
+    if (!deleted) return jsonError(res, 404, 'Користувача не знайдено')
+    console.log(`User deleted by admin: id=${deleted.id} email=${deleted.email}`)
+    res.json({ ok: true })
+  } catch (err) {
+    console.error('Error deleting user:', err)
+    jsonError(res, 500, 'Помилка видалення користувача')
+  }
+})
+
 app.get('/api/admin/stats', requireAdmin, async (req, res) => {
   try {
     const stats = await db.getAdminStats()

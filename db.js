@@ -266,6 +266,15 @@ async function listUsers() {
   return result.rows
 }
 
+async function deleteUser(id) {
+  // sessions мають ON DELETE CASCADE, тому всі сесії авторизації клієнта зникають автоматично
+  const result = await pool.query(
+    'DELETE FROM users WHERE id = $1 RETURNING id, email, name',
+    [id]
+  )
+  return result.rows[0] || null
+}
+
 /* ---- Bookings ---- */
 
 function generateBookingCode() {
@@ -445,6 +454,7 @@ module.exports = {
   getUserBySession,
   deleteSession,
   listUsers,
+  deleteUser,
   createBooking,
   getBookingByCode,
   getBookingById,
