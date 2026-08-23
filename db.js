@@ -91,6 +91,9 @@ async function initSchema() {
     UPDATE bookings SET hall = 'Основний зал' WHERE hall = 'Основной зал';
     UPDATE tables SET hall = 'Тераса' WHERE hall = 'Терраса';
     UPDATE tables SET hall = 'Основний зал' WHERE hall = 'Основной зал';
+
+    ALTER TABLE bookings ADD COLUMN IF NOT EXISTS user_id INTEGER REFERENCES users(id) ON DELETE CASCADE;
+    CREATE INDEX IF NOT EXISTS idx_bookings_user ON bookings(user_id);
   `)
 
   await seedTables()
@@ -291,13 +294,13 @@ function generateBookingCode() {
   return `LUXE-${code}`
 }
 
-async function createBooking({ guest_name, phone, booking_date, booking_time, guests_count, hall, table_num, notes }) {
+async function createBooking({ user_id, guest_name, phone, booking_date, booking_time, guests_count, hall, table_num, notes }) {
   const booking_code = generateBookingCode()
   const result = await pool.query(
-    `INSERT INTO bookings (booking_code, guest_name, phone, booking_date, booking_time, guests_count, hall, table_num, notes, status)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'pending')
+    `INSERT INTO bookings (booking_code, user_id, guest_name, phone, booking_date, booking_time, guests_count, hall, table_num, notes, status)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'pending')
      RETURNING *`,
-    [booking_code, guest_name || 'Гість', phone || null, booking_date, booking_time, guests_count || 2, hall || 'Основний зал', table_num || null, notes || '']
+    [booking_code, user_id || null, guest_name || 'Гість', phone || null, booking_date, booking_time, guests_count || 2, hall || 'Основний зал', table_num || null, notes || '']
   )
   return result.rows[0]
 }
@@ -328,13 +331,14 @@ async function verifyBookingWithTelegram(booking_code, verifiedPhone, chatId, us
 }
 
 async function listBookings(statusFilter) {
-  let query = 'SELECT * FROM bookings'
+  let query = `SELECT b.*, u.email AS user_email, u.name AS user_name, u.avatar AS user_avatar
+               FROM bookings b LEFT JOIN users u ON u.id = b.user_id`
   const params = []
   if (statusFilter && statusFilter !== 'all') {
-    query += ' WHERE status = $1'
+    query += ' WHERE b.status = $1'
     params.push(statusFilter)
   }
-  query += ' ORDER BY booking_date ASC, booking_time ASC, id DESC'
+  query += ' ORDER BY b.booking_date ASC, b.booking_time ASC, b.id DESC'
   const result = await pool.query(query, params)
   return result.rows
 }

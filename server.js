@@ -60,6 +60,12 @@ function normalizeHall(hall) {
 
 app.post('/api/bookings', async (req, res) => {
   try {
+    // Бронювання доступне лише авторизованим клієнтам
+    const user = await db.getUserBySession(req.cookies[COOKIE])
+    if (!user) {
+      return jsonError(res, 401, 'Увійдіть через Google, щоб забронювати столик')
+    }
+
     const { guest_name, phone, booking_date, booking_time, guests_count, hall, table_num, notes } = req.body || {}
     if (!booking_date || !booking_time) {
       return jsonError(res, 400, 'Вкажіть дату та час бронювання')
@@ -83,7 +89,8 @@ app.post('/api/bookings', async (req, res) => {
     const normalizedHall = normalizeHall(hall)
 
     let booking = await db.createBooking({
-      guest_name,
+      user_id: user.id,
+      guest_name: guest_name || user.name || user.email,
       phone,
       booking_date,
       booking_time,
