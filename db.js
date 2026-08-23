@@ -86,6 +86,11 @@ async function initSchema() {
       category TEXT NOT NULL,
       is_stopped BOOLEAN NOT NULL DEFAULT FALSE
     );
+
+    UPDATE bookings SET hall = 'Тераса' WHERE hall = 'Терраса';
+    UPDATE bookings SET hall = 'Основний зал' WHERE hall = 'Основной зал';
+    UPDATE tables SET hall = 'Тераса' WHERE hall = 'Терраса';
+    UPDATE tables SET hall = 'Основний зал' WHERE hall = 'Основной зал';
   `)
 
   await seedTables()
@@ -292,7 +297,7 @@ async function createBooking({ guest_name, phone, booking_date, booking_time, gu
     `INSERT INTO bookings (booking_code, guest_name, phone, booking_date, booking_time, guests_count, hall, table_num, notes, status)
      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'pending')
      RETURNING *`,
-    [booking_code, guest_name || 'Гость', phone || null, booking_date, booking_time, guests_count || 2, hall || 'Основной зал', table_num || null, notes || '']
+    [booking_code, guest_name || 'Гість', phone || null, booking_date, booking_time, guests_count || 2, hall || 'Основний зал', table_num || null, notes || '']
   )
   return result.rows[0]
 }
@@ -364,6 +369,36 @@ async function updateTableStatus(id, status) {
     [status, id]
   )
   return result.rows[0] || null
+}
+
+async function findFreeTable(hall, guestsCount) {
+  let guests = parseInt(guestsCount)
+  if (isNaN(guests) || guests < 1 || guests > 20) guests = 2
+  const params = [guests]
+  let query = "SELECT * FROM tables WHERE status = 'free' AND capacity >= $1"
+  if (hall) {
+    params.push(hall)
+    query += ` AND hall = $${params.length}`
+  }
+  query += ' ORDER BY capacity ASC, number ASC LIMIT 1'
+  const result = await pool.query(query, params)
+  return result.rows[0] || null
+}
+
+async function assignBookingTable(bookingId, tableNum) {
+  const result = await pool.query(
+    'UPDATE bookings SET table_num = $1 WHERE id = $2 RETURNING *',
+    [tableNum, bookingId]
+  )
+  return result.rows[0] || null
+}
+
+async function releaseBookingTable(hall, tableNum) {
+  if (!hall || !tableNum) return
+  await pool.query(
+    "UPDATE tables SET status = 'free' WHERE hall = $1 AND number = $2 AND status = 'reserved'",
+    [hall, tableNum]
+  )
 }
 
 /* ---- Staff ---- */
@@ -464,6 +499,9 @@ module.exports = {
   deleteBooking,
   listTables,
   updateTableStatus,
+  findFreeTable,
+  assignBookingTable,
+  releaseBookingTable,
   listStaff,
   createStaff,
   updateStaffShift,

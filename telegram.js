@@ -98,6 +98,9 @@ async function handleMessage(msg) {
 
     if (updated) {
       const dateStr = new Date(updated.booking_date).toLocaleDateString('uk-UA')
+      const tableLine = updated.table_num
+        ? `🍽️ Столик: №${updated.table_num} (${updated.hall})\n`
+        : ''
       return tgApi('sendMessage', {
         chat_id: chatId,
         text: `✅ Бронювання успішно підтверджено!\n\n` +
@@ -106,9 +109,10 @@ async function handleMessage(msg) {
           `⏰ Час: ${updated.booking_time}\n` +
           `👥 Гостей: ${updated.guests_count}\n` +
           `🏛 Зал: ${updated.hall}\n` +
+          tableLine +
           `📱 Телефон: ${formattedPhone}\n` +
           `🔖 Код: ${updated.booking_code}\n\n` +
-          `Адміністратор підготує найкращий столик до вашого візиту. До зустрічі! ✨`,
+          `До зустрічі! ✨`,
         reply_markup: { remove_keyboard: true }
       })
     } else {

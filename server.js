@@ -48,23 +48,57 @@ app.get('/api/health', (req, res) => {
 
 /* ---- Public Booking APIs ---- */
 
+const HALL_ALIASES = {
+  'Основной зал': 'Основний зал',
+  'Терраса': 'Тераса'
+}
+
+function normalizeHall(hall) {
+  if (!hall) return 'Основний зал'
+  return HALL_ALIASES[hall] || hall
+}
+
 app.post('/api/bookings', async (req, res) => {
   try {
     const { guest_name, phone, booking_date, booking_time, guests_count, hall, table_num, notes } = req.body || {}
     if (!booking_date || !booking_time) {
-      return jsonError(res, 400, 'Укажите дату и время бронирования')
+      return jsonError(res, 400, 'Вкажіть дату та час бронювання')
     }
 
-    const booking = await db.createBooking({
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(String(booking_date)) || isNaN(Date.parse(booking_date))) {
+      return jsonError(res, 400, 'Некоректна дата бронювання')
+    }
+    const bookingDay = new Date(booking_date)
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const maxDay = new Date(today)
+    maxDay.setFullYear(maxDay.getFullYear() + 1)
+    if (bookingDay < today || bookingDay > maxDay) {
+      return jsonError(res, 400, 'Дата має бути від сьогодні до одного року вперед')
+    }
+    if (!/^\d{1,2}:\d{2}$/.test(String(booking_time))) {
+      return jsonError(res, 400, 'Некоректний час бронювання')
+    }
+
+    const normalizedHall = normalizeHall(hall)
+
+    let booking = await db.createBooking({
       guest_name,
       phone,
       booking_date,
       booking_time,
       guests_count: parseInt(guests_count) || 2,
-      hall,
+      hall: normalizedHall,
       table_num: table_num ? parseInt(table_num) : null,
       notes
     })
+
+    // Автоматично закріплюємо вільний столик у обраному залі
+    const table = await db.findFreeTable(normalizedHall, guests_count)
+    if (table) {
+      await db.updateTableStatus(table.id, 'reserved')
+      booking = await db.assignBookingTable(booking.id, table.number)
+    }
 
     const botUsername = 'LUXE_Restaurant_bot'
     const telegramUrl = `https://t.me/${botUsername}?start=${booking.booking_code}`
@@ -72,11 +106,12 @@ app.post('/api/bookings', async (req, res) => {
     res.json({
       ok: true,
       booking,
-      telegramUrl
+      telegramUrl,
+      table: table ? { number: table.number, hall: table.hall, capacity: table.capacity } : null
     })
   } catch (err) {
     console.error('Error creating booking:', err)
-    jsonError(res, 500, 'Не удалось создать бронирование')
+    jsonError(res, 500, 'Не вдалося створити бронювання')
   }
 })
 
@@ -332,6 +367,9 @@ app.patch('/api/admin/bookings/:id', requireAdmin, async (req, res) => {
     const { status, table_num } = req.body || {}
     const updated = await db.updateBookingStatus(req.params.id, status, table_num)
     if (!updated) return jsonError(res, 404, 'Бронювання не знайдено')
+    if (status === 'cancelled' || status === 'completed') {
+      await db.releaseBookingTable(updated.hall, updated.table_num)
+    }
     res.json({ ok: true, booking: updated })
   } catch (err) {
     jsonError(res, 500, 'Помилка оновлення бронювання')
@@ -340,7 +378,11 @@ app.patch('/api/admin/bookings/:id', requireAdmin, async (req, res) => {
 
 app.delete('/api/admin/bookings/:id', requireAdmin, async (req, res) => {
   try {
+    const booking = await db.getBookingById(req.params.id)
     await db.deleteBooking(req.params.id)
+    if (booking) {
+      await db.releaseBookingTable(booking.hall, booking.table_num)
+    }
     res.json({ ok: true })
   } catch (err) {
     jsonError(res, 500, 'Помилка видалення бронювання')
