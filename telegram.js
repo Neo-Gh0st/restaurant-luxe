@@ -37,7 +37,7 @@ async function handleMessage(msg) {
     if (!code) {
       return tgApi('sendMessage', {
         chat_id: chatId,
-        text: 'Ласкаво просимо до бота ресторану LUXE! ✨\n\nДля підтвердження бронювання перейдіть за посиланням зі сторінки бронювання на нашому сайті: https://restaurant-luxe.pp.ua/booking.html'
+        text: 'Вітаємо у LUXE! 👋\n\nТут ми підтверджуємо бронювання столиків. Посилання для підтвердження є на сторінці бронювання на сайті: https://restaurant-luxe.pp.ua/booking.html'
       })
     }
 
@@ -45,7 +45,7 @@ async function handleMessage(msg) {
     if (!booking) {
       return tgApi('sendMessage', {
         chat_id: chatId,
-        text: `⚠️ Бронювання з кодом "${code}" не знайдено або застаріло. Будь ласка, перевірте посилання на сайті.`
+        text: `Хм, броні з кодом "${code}" не знаходимо 😕 Можливо, посилання застаріло — відкрийте свіже на сторінці бронювання.`
       })
     }
 
@@ -53,13 +53,11 @@ async function handleMessage(msg) {
 
     const dateStr = new Date(booking.booking_date).toLocaleDateString('uk-UA')
     const msgText = `Вітаємо, ${booking.guest_name || 'Гість'}! 🥂\n\n` +
-      `Ви оформлюєте бронювання в ресторані LUXE:\n` +
-      `📅 Дата: ${dateStr}\n` +
-      `⏰ Час: ${booking.booking_time}\n` +
+      `Все сходиться — це ваша бронь:\n` +
+      `📅 ${dateStr} о ${booking.booking_time}\n` +
       `👥 Гостей: ${booking.guests_count}\n` +
-      `🏛 Зал: ${booking.hall}\n` +
-      `🔖 Код: ${booking.booking_code}\n\n` +
-      `Щоб завершити підтвердження та закріпити за вами столик, натисніть кнопку нижче ⬇️`
+      `🏛 Зал: ${booking.hall}\n\n` +
+      `Поділіться номером кнопкою нижче — і ми закріпимо за вами столик.`
 
     return tgApi('sendMessage', {
       chat_id: chatId,
@@ -68,7 +66,7 @@ async function handleMessage(msg) {
         keyboard: [
           [
             {
-              text: '📱 Поділитися номером телефону для підтвердження',
+              text: '📱 Надіслати свій номер',
               request_contact: true
             }
           ]
@@ -88,7 +86,7 @@ async function handleMessage(msg) {
     if (!bookingCode) {
       return tgApi('sendMessage', {
         chat_id: chatId,
-        text: 'Дякуємо за контакт! Якщо ви оформлюєте бронь, перейдіть за посиланням з сайту.',
+        text: 'Дякуємо! Якщо зараз бронюєте столик — перейдіть за посиланням зі сторінки бронювання на сайті.',
         reply_markup: { remove_keyboard: true }
       })
     }
@@ -99,26 +97,24 @@ async function handleMessage(msg) {
     if (updated) {
       const dateStr = new Date(updated.booking_date).toLocaleDateString('uk-UA')
       const tableLine = updated.table_num
-        ? `🍽️ Столик: №${updated.table_num} (${updated.hall})\n`
+        ? `🪑 Столик №${updated.table_num} — вже за вами\n`
         : ''
       return tgApi('sendMessage', {
         chat_id: chatId,
-        text: `✅ Бронювання успішно підтверджено!\n\n` +
-          `🍽️ Ресторан LUXE чекає на вас!\n` +
-          `📅 Дата: ${dateStr}\n` +
-          `⏰ Час: ${updated.booking_time}\n` +
+        text: `Готово, ${updated.guest_name || 'гість'}! Бронь підтверджена ✅\n\n` +
+          `Чекаємо на вас:\n` +
+          `📅 ${dateStr} о ${updated.booking_time}\n` +
           `👥 Гостей: ${updated.guests_count}\n` +
           `🏛 Зал: ${updated.hall}\n` +
           tableLine +
-          `📱 Телефон: ${formattedPhone}\n` +
           `🔖 Код: ${updated.booking_code}\n\n` +
-          `До зустрічі! ✨`,
+          `Якщо плани зміняться — просто напишіть нам тут. До зустрічі!`,
         reply_markup: { remove_keyboard: true }
       })
     } else {
       return tgApi('sendMessage', {
         chat_id: chatId,
-        text: 'Не вдалося оновити статус броні. Будь ласка, зверніться до адміністратора ресторану.',
+        text: 'Ой, щось пішло не так 😕 Напишіть нам — розберемося.',
         reply_markup: { remove_keyboard: true }
       })
     }
@@ -128,7 +124,7 @@ async function handleMessage(msg) {
   if (text) {
     return tgApi('sendMessage', {
       chat_id: chatId,
-      text: 'Для бронювання столиків відвідайте наш сайт: https://restaurant-luxe.pp.ua\nКонтакти: +380 (44) 123-45-67'
+      text: 'Забронювати столик можна на сайті: https://restaurant-luxe.pp.ua\nАбо телефонуйте: +380 (44) 123-45-67'
     })
   }
 }
