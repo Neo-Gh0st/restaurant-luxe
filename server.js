@@ -125,10 +125,22 @@ app.post('/api/bookings', async (req, res) => {
 app.get('/api/bookings/:code/status', async (req, res) => {
   try {
     const booking = await db.getBookingByCode(req.params.code)
-    if (!booking) return jsonError(res, 404, 'Бронирование не найдено')
+    if (!booking) return jsonError(res, 404, 'Бронювання не знайдено')
     res.json({ ok: true, booking })
   } catch (err) {
-    jsonError(res, 500, 'Ошибка получения статуса')
+    jsonError(res, 500, 'Помилка отримання статусу')
+  }
+})
+
+app.get('/api/my/bookings', async (req, res) => {
+  try {
+    const user = await db.getUserBySession(req.cookies[COOKIE])
+    if (!user) return jsonError(res, 401, 'Не авторизовано')
+    const bookings = await db.listUserBookings(user.id)
+    res.json({ ok: true, bookings })
+  } catch (err) {
+    console.error('Error listing user bookings:', err)
+    jsonError(res, 500, 'Помилка отримання бронювань')
   }
 })
 

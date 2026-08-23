@@ -360,6 +360,14 @@ async function deleteBooking(id) {
   await pool.query('DELETE FROM bookings WHERE id = $1', [id])
 }
 
+async function listUserBookings(userId) {
+  const result = await pool.query(
+    'SELECT * FROM bookings WHERE user_id = $1 ORDER BY booking_date DESC, booking_time DESC, id DESC',
+    [userId]
+  )
+  return result.rows
+}
+
 /* ---- Tables ---- */
 
 async function listTables() {
@@ -499,6 +507,7 @@ module.exports = {
   getBookingById,
   verifyBookingWithTelegram,
   listBookings,
+  listUserBookings,
   updateBookingStatus,
   deleteBooking,
   listTables,
