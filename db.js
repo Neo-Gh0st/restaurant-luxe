@@ -94,11 +94,17 @@ async function initSchema() {
 
     ALTER TABLE bookings ADD COLUMN IF NOT EXISTS user_id INTEGER REFERENCES users(id) ON DELETE CASCADE;
     CREATE INDEX IF NOT EXISTS idx_bookings_user ON bookings(user_id);
+
+    CREATE TABLE IF NOT EXISTS halls (
+      id SERIAL PRIMARY KEY,
+      name TEXT NOT NULL UNIQUE
+    );
   `)
 
   await seedTables()
   await seedStaff()
   await seedStopList()
+  await seedHalls()
 }
 
 async function seedAdmin(username, password) {
@@ -166,7 +172,6 @@ async function seedStaff() {
 async function seedStopList() {
   const count = await pool.query('SELECT COUNT(*) FROM stop_list')
   if (parseInt(count.rows[0].count) > 0) return
-
   const defaultItems = [
     { item_name: 'Тартар із мармурової яловичини з трюфелем', category: 'Закуски', is_stopped: false },
     { item_name: 'Севіче з дикого сибаса з манго', category: 'Закуски', is_stopped: false },
@@ -184,6 +189,17 @@ async function seedStopList() {
     )
   }
   console.log('Default stop list seeded')
+}
+
+async function seedHalls() {
+  const count = await pool.query('SELECT COUNT(*) FROM halls')
+  if (parseInt(count.rows[0].count) > 0) return
+
+  const distinct = await pool.query('SELECT DISTINCT hall FROM tables ORDER BY hall')
+  for (const row of distinct.rows) {
+    await pool.query('INSERT INTO halls (name) VALUES ($1) ON CONFLICT DO NOTHING', [row.hall])
+  }
+  console.log('Halls seeded from existing tables')
 }
 
 function hashPassword(password, salt) {
@@ -383,6 +399,53 @@ async function updateTableStatus(id, status) {
   return result.rows[0] || null
 }
 
+async function createTable({ hall, capacity }) {
+  const max = await pool.query(
+    'SELECT COALESCE(MAX(number), 0) as m FROM tables WHERE hall = $1',
+    [hall]
+  )
+  const number = parseInt(max.rows[0].m) + 1
+  let cap = parseInt(capacity)
+  if (isNaN(cap) || cap < 1) cap = 4
+  if (cap > 30) cap = 30
+  const result = await pool.query(
+    "INSERT INTO tables (number, hall, capacity, status) VALUES ($1, $2, $3, 'free') RETURNING *",
+    [number, hall, cap]
+  )
+  return result.rows[0]
+}
+
+async function deleteTable(id) {
+  await pool.query('DELETE FROM tables WHERE id = $1', [id])
+}
+
+/* ---- Halls ---- */
+
+async function listHalls() {
+  const result = await pool.query('SELECT * FROM halls ORDER BY id ASC')
+  return result.rows
+}
+
+async function createHall(name) {
+  const result = await pool.query(
+    'INSERT INTO halls (name) VALUES ($1) ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name RETURNING *',
+    [name]
+  )
+  return result.rows[0]
+}
+
+async function deleteHall(id) {
+  const found = await pool.query('SELECT * FROM halls WHERE id = $1', [id])
+  if (!found.rows.length) return { error: 'Зал не знайдено' }
+  const hall = found.rows[0]
+  const used = await pool.query('SELECT COUNT(*) as c FROM tables WHERE hall = $1', [hall.name])
+  if (parseInt(used.rows[0].c) > 0) {
+    return { error: `У залі «${hall.name}» ще є столики (${used.rows[0].c}) — спочатку видаліть їх` }
+  }
+  await pool.query('DELETE FROM halls WHERE id = $1', [id])
+  return { ok: true }
+}
+
 async function findFreeTable(hall, guestsCount) {
   let guests = parseInt(guestsCount)
   if (isNaN(guests) || guests < 1 || guests > 20) guests = 2
@@ -455,6 +518,18 @@ async function toggleStopListItem(id, is_stopped) {
   return result.rows[0] || null
 }
 
+async function createStopListItem({ item_name, category }) {
+  const result = await pool.query(
+    "INSERT INTO stop_list (item_name, category, is_stopped) VALUES ($1, $2, FALSE) RETURNING *",
+    [item_name, category || 'Інше']
+  )
+  return result.rows[0]
+}
+
+async function deleteStopListItem(id) {
+  await pool.query('DELETE FROM stop_list WHERE id = $1', [id])
+}
+
 /* ---- Stats ---- */
 
 async function getAdminStats() {
@@ -512,6 +587,11 @@ module.exports = {
   deleteBooking,
   listTables,
   updateTableStatus,
+  createTable,
+  deleteTable,
+  listHalls,
+  createHall,
+  deleteHall,
   findFreeTable,
   assignBookingTable,
   releaseBookingTable,
@@ -521,5 +601,7 @@ module.exports = {
   deleteStaff,
   listStopList,
   toggleStopListItem,
+  createStopListItem,
+  deleteStopListItem,
   getAdminStats
 }

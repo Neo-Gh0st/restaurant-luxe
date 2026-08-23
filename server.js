@@ -408,6 +408,17 @@ app.delete('/api/admin/bookings/:id', requireAdmin, async (req, res) => {
   }
 })
 
+/* ---- Public: Halls (для форми бронювання) ---- */
+
+app.get('/api/halls', async (req, res) => {
+  try {
+    const halls = await db.listHalls()
+    res.json({ ok: true, halls })
+  } catch (err) {
+    jsonError(res, 500, 'Помилка отримання залів')
+  }
+})
+
 /* ---- Admin: Tables ---- */
 
 app.get('/api/admin/tables', requireAdmin, async (req, res) => {
@@ -419,6 +430,19 @@ app.get('/api/admin/tables', requireAdmin, async (req, res) => {
   }
 })
 
+app.post('/api/admin/tables', requireAdmin, async (req, res) => {
+  try {
+    const { hall, capacity } = req.body || {}
+    const hallName = String(hall || '').trim()
+    if (!hallName) return jsonError(res, 400, 'Оберіть зал для нового столика')
+    const table = await db.createTable({ hall: hallName, capacity })
+    res.json({ ok: true, table })
+  } catch (err) {
+    console.error('Error creating table:', err)
+    jsonError(res, 500, 'Помилка додавання столика')
+  }
+})
+
 app.patch('/api/admin/tables/:id', requireAdmin, async (req, res) => {
   try {
     const { status } = req.body || {}
@@ -427,6 +451,48 @@ app.patch('/api/admin/tables/:id', requireAdmin, async (req, res) => {
     res.json({ ok: true, table: updated })
   } catch (err) {
     jsonError(res, 500, 'Помилка оновлення столика')
+  }
+})
+
+app.delete('/api/admin/tables/:id', requireAdmin, async (req, res) => {
+  try {
+    await db.deleteTable(req.params.id)
+    res.json({ ok: true })
+  } catch (err) {
+    jsonError(res, 500, 'Помилка видалення столика')
+  }
+})
+
+/* ---- Admin: Halls ---- */
+
+app.get('/api/admin/halls', requireAdmin, async (req, res) => {
+  try {
+    res.json({ ok: true, halls: await db.listHalls() })
+  } catch (err) {
+    jsonError(res, 500, 'Помилка отримання залів')
+  }
+})
+
+app.post('/api/admin/halls', requireAdmin, async (req, res) => {
+  try {
+    const name = String((req.body || {}).name || '').trim()
+    if (!name) return jsonError(res, 400, 'Вкажіть назву залу')
+    if (name.length > 50) return jsonError(res, 400, 'Назва залу задовга (максимум 50 символів)')
+    const hall = await db.createHall(name)
+    res.json({ ok: true, hall })
+  } catch (err) {
+    console.error('Error creating hall:', err)
+    jsonError(res, 500, 'Помилка додавання залу')
+  }
+})
+
+app.delete('/api/admin/halls/:id', requireAdmin, async (req, res) => {
+  try {
+    const result = await db.deleteHall(req.params.id)
+    if (result && result.error) return jsonError(res, 400, result.error)
+    res.json({ ok: true })
+  } catch (err) {
+    jsonError(res, 500, 'Помилка видалення залу')
   }
 })
 
@@ -491,6 +557,33 @@ app.patch('/api/admin/stop-list/:id', requireAdmin, async (req, res) => {
     res.json({ ok: true, item: updated })
   } catch (err) {
     jsonError(res, 500, 'Ошибка изменения стоп-листа')
+  }
+})
+
+app.post('/api/admin/stop-list', requireAdmin, async (req, res) => {
+  try {
+    const { item_name, category } = req.body || {}
+    const name = String(item_name || '').trim()
+    if (!name) return jsonError(res, 400, 'Вкажіть назву страви')
+    if (name.length > 120) return jsonError(res, 400, 'Назва задовга (максимум 120 символів)')
+    const item = await db.createStopListItem({
+      item_name: name,
+      category: String(category || '').trim()
+    })
+    res.json({ ok: true, item })
+  } catch (err) {
+    if (err && err.code === '23505') return jsonError(res, 400, 'Така страва вже є у стоп-листі')
+    console.error('Error creating stop-list item:', err)
+    jsonError(res, 500, 'Помилка додавання страви')
+  }
+})
+
+app.delete('/api/admin/stop-list/:id', requireAdmin, async (req, res) => {
+  try {
+    await db.deleteStopListItem(req.params.id)
+    res.json({ ok: true })
+  } catch (err) {
+    jsonError(res, 500, 'Помилка видалення страви')
   }
 })
 
